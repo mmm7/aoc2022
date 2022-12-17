@@ -1,0 +1,88 @@
+from input import R,T
+from functools import lru_cache
+import time
+
+R = dict(sorted(R.items(), key=lambda item: item[1], reverse=True))
+
+
+print(R)
+print(T)
+namemapping = {v:1<<k for k, v in  enumerate(R)}
+print(namemapping)
+START=namemapping['AA']
+R={namemapping[k]:v for k,v in R.items()}
+T={namemapping[k]:[namemapping[i] for i in v] for k,v in T.items()}
+
+ALLNYITVA = 1
+for k,v in R.items():
+    if v: ALLNYITVA |= k
+
+print(R)
+print(T)
+
+print(ALLNYITVA)
+
+BEST={}
+prune = 0
+
+MAXTIME=26
+
+@lru_cache(maxsize=None)
+def totalrate(nyitva):
+    curr = 1
+    s = 0
+    while nyitva:
+        if nyitva & 1: s+=R[curr]
+        curr <<= 1
+        nyitva >>= 1
+    return s
+
+@lru_cache(maxsize=None)
+def best(nyitva, t, hol, sofar):
+    global prune
+    #print('=====================')
+    #print(nyitva, t, hol)
+    #print(BEST)
+    if t==MAXTIME: return 0
+
+    #pruning
+    theoretical = sofar+(MAXTIME-t-1)*totalrate(ALLNYITVA)
+    if theoretical<=prune: return -100000000
+    prune = max(prune,sofar)
+
+    if nyitva == ALLNYITVA:
+        #print('--->', (MAXTIME-t)*totalrate(nyitva))
+        return (MAXTIME-t)*totalrate(nyitva)
+    if (nyitva,hol[0]|hol[1]) in BEST and BEST[(nyitva, hol[0]|hol[1])] < t:
+        return -10000000
+    BEST[(nyitva, hol[0]|hol[1])] = t
+
+    if len(BEST)%10000 == 0:
+        print(len(BEST), bin(nyitva), t, sofar, prune)
+
+    options1=[]
+    if not(hol[0] & nyitva) and totalrate(hol[0])>0:
+        options1.append((hol[0], hol[0]))
+    for hova in T[hol[0]]:
+        options1.append((0, hova))
+
+    options2=[]
+    if not (hol[1] & nyitva) and totalrate(hol[1])>0 and hol[0]!=hol[1]:
+        options2.append((hol[1], hol[1]))
+    for hova in T[hol[1]]:
+        options2.append((0, hova))
+
+    #print(options1, options2)
+
+    cand=[]
+    for o1 in options1:
+        for o2 in options2:
+            ujnyitva = nyitva
+            ujnyitva |= o1[0]
+            ujnyitva |= o2[0]
+            ujhol = tuple(sorted([o1[1], o2[1]]))
+            cand.append(best(ujnyitva, t+1, ujhol, sofar+totalrate(nyitva)))
+    return totalrate(nyitva)+max(cand)
+
+
+print(best(0, 0, (START,START), 0))
