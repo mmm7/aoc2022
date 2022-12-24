@@ -54,23 +54,36 @@ assert (6,4) in candidates((7,4))
 assert (7,3) in candidates((7,4))
 assert (7,5) in candidates((7,4))
 
-n = 0
-poss={(-1,ENTRY)}
-while True:
-    n+=1
-    print('==========================', n, len(poss))
-    B=moveblizzards(B)
-    newposs = {(-1, ENTRY)}
-    for pos in poss:
-        for y,x in candidates(pos):
-            if y==Y and x==EXIT:
-                print("A:", n)
-                exit(0)
-            if x<0 or x>=X: continue
-            if y<0 or y>=Y: continue
-            if (y,x) in B: continue
-            newposs.add((y,x))
-    poss = newposs
-    #printb(B,poss)
-    #sleep(1)
+def solve(B, targets):
+    global X,Y
+    START = targets.pop(0)
+    initialposs={START}
+    poss=initialposs.copy()
+    n = 0
+    while targets:
+        n+=1
+        #print('==========================', n, targets, len(poss))
+        B=moveblizzards(B)
+        newposs = initialposs.copy()
+        reached = False
+        for pos in poss:
+            for y,x in candidates(pos):
+                if (y,x) == targets[0]:
+                    reached = True
+                    continue
+                if x<0 or x>=X: continue
+                if y<0 or y>=Y: continue
+                if (y,x) in B: continue
+                newposs.add((y,x))
+        if reached:
+            t = targets.pop(0)
+            print("REACHED", t, n)
+            initialposs = {t}
+            newposs = initialposs.copy()
+        poss = newposs
+        #printb(B,poss)
+        #sleep(1)
+    return n
 
+print("A:", solve(B, [(-1, ENTRY), (Y,EXIT)]))
+print("B:", solve(B, [(-1, ENTRY), (Y,EXIT), (-1, ENTRY), (Y,EXIT)]))
