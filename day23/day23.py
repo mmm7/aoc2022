@@ -18,23 +18,21 @@ def D(s):
 
 assert D('E')==(0,1)
 
+def mv(y,x,dy,dx):
+    return (y+dy,x+dx)
+
 @lru_cache(maxsize=None)
-def tocheck(c):
-    if c==D('N'): return (D('N'), D('NE'), D('NW'))
-    if c==D('S'): return (D('S'), D('SE'), D('SW'))
-    if c==D('E'): return (D('E'), D('NE'), D('SE'))
-    if c==D('W'): return (D('W'), D('NW'), D('SW'))
+def tocheck(pos, c):
+    if c==D('N'): return (mv(*pos,*D('N')), mv(*pos,*D('NE')), mv(*pos,*D('NW')))
+    if c==D('S'): return (mv(*pos,*D('S')), mv(*pos,*D('SE')), mv(*pos,*D('SW')))
+    if c==D('E'): return (mv(*pos,*D('E')), mv(*pos,*D('NE')), mv(*pos,*D('SE')))
+    if c==D('W'): return (mv(*pos,*D('W')), mv(*pos,*D('NW')), mv(*pos,*D('SW')))
     assert False,c
 
-assert tocheck(D('W'))==((0, -1), (-1, -1), (1, -1)), tocheck(D('W'))
-
-def empty(pos):
-    global I
-    return (pos[0], pos[1]) not in I
+assert tocheck((0,0), D('W'))==((0, -1), (-1, -1), (1, -1)), tocheck((0,0), D('W'))
 
 @lru_cache(maxsize=None)
-def adj8(pos=(0,0)):
-    y,x=pos
+def adj8(y=0, x=0):
     res=[]
     for yy in range(-1,2):
         for xx in range(-1,2):
@@ -49,16 +47,21 @@ def rotatedirs():
 
 
 def round():
+    @lru_cache(maxsize=None)
+    def empty(pos):
+        global I
+        return tuple(pos) not in I
+
     global I, DIRS
     targ = {}
     stay = 0
     for pos in I:
         noonenear = True
-        for adjpos in adj8(pos):
+        for adjpos in adj8(*pos):
             if not empty(adjpos):
                 noonenear=False
-                #assert pos not in targ, '%s %s' % (pos, targ)
                 break
+                #assert pos not in targ, '%s %s' % (pos, targ)
         if noonenear:
             #assert pos not in targ
             targ[pos] = [pos]
@@ -69,12 +72,12 @@ def round():
         cons = None
         for d in DIRS:
             allempty = True
-            for yy,xx in tocheck(d):
-                if not empty((pos[0]+yy, pos[1]+xx)):
+            for delta in tocheck(pos,d):
+                if not empty(delta):
                     allempty = False
                     break
             if not allempty: continue
-            cons = (pos[0]+d[0], pos[1]+d[1])
+            cons = mv(*pos,*d)
             break
 
         if not cons:
